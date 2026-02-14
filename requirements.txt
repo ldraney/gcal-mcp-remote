@@ -1,7 +1,7 @@
-# calendar-mcp: install from local checkout or PyPI
-# Local: pip install -e /path/to/calendar-mcp
-# PyPI:  pip install calendar-mcp  (when published)
-calendar-mcp>=0.1.0,<1.0
+# gcal-mcp: install from local checkout or PyPI
+# Local: pip install -e /path/to/gcal-mcp
+# PyPI:  pip install gcal-mcp  (when published)
+gcal-mcp>=0.1.0,<1.0
 cryptography>=46.0.5,<47.0
 python-dotenv>=1.2.1,<2.0
 httpx>=0.28.1,<1.0

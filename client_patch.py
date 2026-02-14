@@ -1,6 +1,6 @@
 """Per-request GCalClient injection via ContextVar.
 
-Monkey-patches get_client() in calendar_mcp.server and all 3 tool modules
+Monkey-patches get_client() in gcal_mcp.server and all 3 tool modules
 so each authenticated request gets its own GCalClient with the user's
 Google OAuth credentials.
 """
@@ -63,17 +63,17 @@ def client_context(refresh_token: str, client_id: str, client_secret: str):
 
 
 def apply_patch() -> None:
-    """Replace get_client in calendar_mcp.server and all tool modules."""
-    import calendar_mcp.server
-    import calendar_mcp.tools.events
-    import calendar_mcp.tools.calendars
-    import calendar_mcp.tools.freebusy
+    """Replace get_client in gcal_mcp.server and all tool modules."""
+    import gcal_mcp.server
+    import gcal_mcp.tools.events
+    import gcal_mcp.tools.calendars
+    import gcal_mcp.tools.freebusy
 
-    calendar_mcp.server.get_client = patched_get_client
+    gcal_mcp.server.get_client = patched_get_client
 
     for mod in [
-        calendar_mcp.tools.events,
-        calendar_mcp.tools.calendars,
-        calendar_mcp.tools.freebusy,
+        gcal_mcp.tools.events,
+        gcal_mcp.tools.calendars,
+        gcal_mcp.tools.freebusy,
     ]:
         mod.get_client = patched_get_client
