@@ -105,6 +105,15 @@ async def health(request: Request) -> Response:
     return JSONResponse({"status": "ok"})
 
 
+@mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
+async def oauth_protected_resource(request: Request) -> Response:
+    """RFC 9728 — Protected Resource Metadata for MCP clients."""
+    return JSONResponse({
+        "resource": f"{BASE_URL}/mcp",
+        "authorization_servers": [f"{BASE_URL}/"],
+    })
+
+
 @mcp.custom_route("/oauth/callback", methods=["GET"])
 async def google_oauth_callback(request: Request) -> Response:
     """Handle Google's OAuth redirect after user authorizes.
