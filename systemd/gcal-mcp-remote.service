@@ -1,0 +1,15 @@
+[Unit]
+Description=Google Calendar MCP Remote Server
+After=network.target
+
+[Service]
+Type=simple
+User=ldraney
+WorkingDirectory=/home/ldraney/gcal-mcp-remote
+EnvironmentFile=/home/ldraney/gcal-mcp-remote/.env
+ExecStart=/home/ldraney/gcal-mcp-remote/.venv/bin/python server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
