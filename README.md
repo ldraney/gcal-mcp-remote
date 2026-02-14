@@ -54,9 +54,17 @@ curl -X POST http://127.0.0.1:8001/mcp                               # 401 (auth
 
 ## Deploying
 
+### Standalone
+
 Use any HTTPS tunnel (Tailscale Funnel, ngrok, Cloudflare Tunnel) to expose the server publicly, then add the URL as a Claude.ai connector.
 
 A systemd service file is provided in `systemd/gcal-mcp-remote.service`.
+
+### Kubernetes (production)
+
+Production deployment is managed by [mcp-gateway-k8s](https://github.com/ldraney/mcp-gateway-k8s), which runs this server as a pod with Tailscale Funnel ingress. That repo contains the Dockerfile, K8s manifests, and secrets management.
+
+Full integration testing (Claude.ai connector → OAuth → Google Calendar) is tracked in [mcp-gateway-k8s#12](https://github.com/ldraney/mcp-gateway-k8s/issues/12) and [#6](https://github.com/ldraney/gcal-mcp-remote/issues/6).
 
 ## License
 
