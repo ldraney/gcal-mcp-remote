@@ -88,12 +88,9 @@ mcp.settings.stateless_http = True
 # Allow the public hostname through transport security
 from urllib.parse import urlparse  # noqa: E402
 
-_parsed = urlparse(BASE_URL)
-if _parsed.hostname:
-    _allowed = [_parsed.hostname]
-    if _parsed.port:
-        _allowed.append(f"{_parsed.hostname}:{_parsed.port}")
-    mcp.settings.transport_security.allowed_hosts = _allowed
+_host = urlparse(BASE_URL).hostname
+if _host:
+    mcp.settings.transport_security.allowed_hosts = [_host]
 
 # ---------------------------------------------------------------------------
 # 6. Custom routes (health check + Google OAuth callback)
