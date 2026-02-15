@@ -11,5 +11,5 @@ dev:
 
 install:
 	python -m venv .venv
-	.venv/bin/pip install -e ../calendar-mcp
+	.venv/bin/pip install -e ../gcal-mcp
 	.venv/bin/pip install cryptography python-dotenv httpx

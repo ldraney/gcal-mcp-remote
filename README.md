@@ -1,13 +1,13 @@
 # gcal-mcp-remote
 
-Remote MCP server wrapping [calendar-mcp](https://github.com/ldraney/calendar-mcp) with Google OAuth 2.0 and Streamable HTTP transport — designed for Claude.ai connectors.
+Remote MCP server wrapping [gcal-mcp](https://github.com/ldraney/gcal-mcp) with Google OAuth 2.0 and Streamable HTTP transport — designed for Claude.ai connectors.
 
 ## How it works
 
 ```
 Claude.ai ──HTTP+Bearer──> gcal-mcp-remote ──Google API──> Google Calendar
                                 │
-                          imports calendar-mcp's FastMCP (all 14 tools)
+                          imports gcal-mcp's FastMCP (all 14 tools)
                           patches get_client() with per-request ContextVar
                           adds Google OAuth + /health + /oauth/callback
 ```

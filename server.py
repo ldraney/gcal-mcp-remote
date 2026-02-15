@@ -1,4 +1,4 @@
-"""Main entrypoint — configures the calendar-mcp FastMCP instance with OAuth
+"""Main entrypoint — configures the gcal-mcp FastMCP instance with OAuth
 and serves it over Streamable HTTP.
 """
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # 1. Apply the per-request client monkey-patch BEFORE importing mcp
-#    (calendar_mcp registers tools at import time)
+#    (gcal_mcp registers tools at import time)
 # ---------------------------------------------------------------------------
 
 from client_patch import apply_patch  # noqa: E402
@@ -36,10 +36,10 @@ from client_patch import apply_patch  # noqa: E402
 apply_patch()
 
 # ---------------------------------------------------------------------------
-# 2. Import the already-constructed FastMCP instance from calendar-mcp
+# 2. Import the already-constructed FastMCP instance from gcal-mcp
 # ---------------------------------------------------------------------------
 
-from calendar_mcp.server import mcp  # noqa: E402
+from gcal_mcp.server import mcp  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 3. Set up auth provider and storage
