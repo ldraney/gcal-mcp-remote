@@ -1,7 +1,7 @@
 """OAuthAuthorizationServerProvider that proxies Google's OAuth 2.0 flow.
 
 Implements the three-party OAuth dance:
-  Claude.ai ↔ this server (MCP + OAuth AS) ↔ Google OAuth
+  Claude.ai <-> this server (MCP + OAuth AS) <-> Google OAuth
 """
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ from mcp.server.auth.provider import (
 )
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
-from auth.storage import TokenStore
-from client_patch import set_client_for_request
+from gcal_mcp_remote.auth.storage import TokenStore
+from gcal_mcp_remote.client_patch import set_client_for_request
 
 logger = logging.getLogger(__name__)
 

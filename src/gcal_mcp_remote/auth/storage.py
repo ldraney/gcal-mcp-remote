@@ -90,7 +90,7 @@ class TokenStore:
             return self._data["clients"].get(client_id)
 
     # ------------------------------------------------------------------
-    # Pending auth flows (authorize → Google callback)
+    # Pending auth flows (authorize -> Google callback)
     # ------------------------------------------------------------------
 
     def store_pending_auth(self, state: str, auth_data: dict) -> None:
@@ -114,7 +114,7 @@ class TokenStore:
             self._save()
 
     # ------------------------------------------------------------------
-    # Authorization codes (our code → google refresh token mapping)
+    # Authorization codes (our code -> google refresh token mapping)
     # ------------------------------------------------------------------
 
     def store_auth_code(self, code: str, code_data: dict) -> None:

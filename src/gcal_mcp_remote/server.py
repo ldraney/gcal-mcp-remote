@@ -1,4 +1,4 @@
-"""Main entrypoint — configures the calendar-mcp FastMCP instance with OAuth
+"""Main entrypoint — configures the gcal-mcp FastMCP instance with OAuth
 and serves it over Streamable HTTP.
 """
 
@@ -28,25 +28,25 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # 1. Apply the per-request client monkey-patch BEFORE importing mcp
-#    (calendar_mcp registers tools at import time)
+#    (gcal_mcp registers tools at import time)
 # ---------------------------------------------------------------------------
 
-from client_patch import apply_patch  # noqa: E402
+from gcal_mcp_remote.client_patch import apply_patch  # noqa: E402
 
 apply_patch()
 
 # ---------------------------------------------------------------------------
-# 2. Import the already-constructed FastMCP instance from calendar-mcp
+# 2. Import the already-constructed FastMCP instance from gcal-mcp
 # ---------------------------------------------------------------------------
 
-from calendar_mcp.server import mcp  # noqa: E402
+from gcal_mcp.server import mcp  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 3. Set up auth provider and storage
 # ---------------------------------------------------------------------------
 
-from auth.provider import GoogleOAuthProvider  # noqa: E402
-from auth.storage import TokenStore  # noqa: E402
+from gcal_mcp_remote.auth.provider import GoogleOAuthProvider  # noqa: E402
+from gcal_mcp_remote.auth.storage import TokenStore  # noqa: E402
 
 store = TokenStore(secret=SESSION_SECRET)
 provider = GoogleOAuthProvider(
@@ -154,11 +154,47 @@ async def google_oauth_callback(request: Request) -> Response:
 
 
 # ---------------------------------------------------------------------------
-# 7. Run
+# 7. Build the app with custom auth middleware for unauthenticated discovery
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+from gcal_mcp_remote.auth.discovery_auth import MethodAwareAuthMiddleware  # noqa: E402
+
+
+def _build_app():
+    """Build the Starlette app and patch /mcp auth to allow tool discovery."""
+    app = mcp.streamable_http_app()
+
+    # Find the /mcp route and replace its endpoint with our custom middleware
+    for route in app.routes:
+        if hasattr(route, "path") and route.path == "/mcp":
+            auth_middleware = route.app  # RequireAuthMiddleware
+            inner_app = auth_middleware.app  # StreamableHTTPASGIApp
+            route.app = MethodAwareAuthMiddleware(
+                app=inner_app,
+                auth_middleware=auth_middleware,
+            )
+            logger.info("Patched /mcp with MethodAwareAuthMiddleware")
+            break
+    else:
+        logger.warning("Could not find /mcp route to patch — auth bypass for discovery will not work")
+
+    return app
+
+
+# ---------------------------------------------------------------------------
+# 8. Run
+# ---------------------------------------------------------------------------
+
+
+def main():
+    import uvicorn  # noqa: E402
+
     logger.info("Starting gcal-mcp-remote on %s:%d", HOST, PORT)
     logger.info("Base URL: %s", BASE_URL)
     logger.info("MCP endpoint: %s/mcp", BASE_URL)
-    mcp.run(transport="streamable-http")
+    app = _build_app()
+    uvicorn.run(app, host=HOST, port=PORT)
+
+
+if __name__ == "__main__":
+    main()
