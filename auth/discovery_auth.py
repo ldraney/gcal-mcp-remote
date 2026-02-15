@@ -71,8 +71,8 @@ class MethodAwareAuthMiddleware:
 
         full_body = b"".join(body_parts)
 
-        # Try to parse JSON-RPC method
-        rpc_method = _extract_jsonrpc_method(full_body)
+        # Try to parse JSON-RPC method(s)
+        rpc_methods = _extract_jsonrpc_methods(full_body)
 
         # Create a replay receive that returns the buffered body
         body_sent = False
@@ -89,24 +89,30 @@ class MethodAwareAuthMiddleware:
             # After body is sent, wait for disconnect
             return await receive()
 
-        if rpc_method and rpc_method in UNAUTHENTICATED_METHODS:
-            logger.debug("Allowing unauthenticated %s request", rpc_method)
+        if rpc_methods and rpc_methods.issubset(UNAUTHENTICATED_METHODS):
+            logger.debug("Allowing unauthenticated %s request", rpc_methods)
             await self.app(scope, replay_receive, send)
         else:
             await self.auth_middleware(scope, replay_receive, send)
 
 
-def _extract_jsonrpc_method(body: bytes) -> str | None:
-    """Extract the JSON-RPC method name from a request body.
+def _extract_jsonrpc_methods(body: bytes) -> set[str]:
+    """Extract all JSON-RPC method names from a request body.
 
-    Handles both single requests and batch arrays (uses first element).
+    Handles both single requests and batch arrays.
+    Returns a set of method names (empty on parse failure).
     """
     try:
         parsed = json.loads(body)
-        if isinstance(parsed, list) and parsed:
-            parsed = parsed[0]
         if isinstance(parsed, dict):
-            return parsed.get("method")
+            m = parsed.get("method")
+            return {m} if m else set()
+        if isinstance(parsed, list):
+            return {
+                item.get("method")
+                for item in parsed
+                if isinstance(item, dict) and item.get("method")
+            }
     except (json.JSONDecodeError, KeyError, IndexError):
         pass
-    return None
+    return set()
