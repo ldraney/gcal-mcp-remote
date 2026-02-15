@@ -167,8 +167,6 @@ def _build_app():
     # Find the /mcp route and replace its endpoint with our custom middleware
     for route in app.routes:
         if hasattr(route, "path") and route.path == "/mcp":
-            # route.app is RequireAuthMiddleware wrapping StreamableHTTPASGIApp
-            # We need the inner app (StreamableHTTPASGIApp) and the auth wrapper
             auth_middleware = route.app  # RequireAuthMiddleware
             inner_app = auth_middleware.app  # StreamableHTTPASGIApp
             route.app = MethodAwareAuthMiddleware(
@@ -177,6 +175,8 @@ def _build_app():
             )
             logger.info("Patched /mcp with MethodAwareAuthMiddleware")
             break
+    else:
+        logger.warning("Could not find /mcp route to patch — auth bypass for discovery will not work")
 
     return app
 
