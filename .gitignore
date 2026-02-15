@@ -9,3 +9,10 @@ dist/
 build/
 .mypy_cache/
 .ruff_cache/
+
+# Claude Code session data (auto-created, not config)
+.claude/projects/
+.claude/todos/
+
+# Worktrees
+.worktrees/
