@@ -154,11 +154,42 @@ async def google_oauth_callback(request: Request) -> Response:
 
 
 # ---------------------------------------------------------------------------
-# 7. Run
+# 7. Build the app with custom auth middleware for unauthenticated discovery
+# ---------------------------------------------------------------------------
+
+from auth.discovery_auth import MethodAwareAuthMiddleware  # noqa: E402
+
+
+def _build_app():
+    """Build the Starlette app and patch /mcp auth to allow tool discovery."""
+    app = mcp.streamable_http_app()
+
+    # Find the /mcp route and replace its endpoint with our custom middleware
+    for route in app.routes:
+        if hasattr(route, "path") and route.path == "/mcp":
+            # route.app is RequireAuthMiddleware wrapping StreamableHTTPASGIApp
+            # We need the inner app (StreamableHTTPASGIApp) and the auth wrapper
+            auth_middleware = route.app  # RequireAuthMiddleware
+            inner_app = auth_middleware.app  # StreamableHTTPASGIApp
+            route.app = MethodAwareAuthMiddleware(
+                app=inner_app,
+                auth_middleware=auth_middleware,
+            )
+            logger.info("Patched /mcp with MethodAwareAuthMiddleware")
+            break
+
+    return app
+
+
+# ---------------------------------------------------------------------------
+# 8. Run
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import uvicorn  # noqa: E402
+
     logger.info("Starting gcal-mcp-remote on %s:%d", HOST, PORT)
     logger.info("Base URL: %s", BASE_URL)
     logger.info("MCP endpoint: %s/mcp", BASE_URL)
-    mcp.run(transport="streamable-http")
+    app = _build_app()
+    uvicorn.run(app, host=HOST, port=PORT)
