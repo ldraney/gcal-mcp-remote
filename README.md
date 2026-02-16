@@ -1,3 +1,7 @@
+[![PyPI](https://img.shields.io/pypi/v/gcal-mcp-remote-ldraney)](https://pypi.org/project/gcal-mcp-remote-ldraney/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 # gcal-mcp-remote
 
 Remote MCP server wrapping [gcal-mcp](https://github.com/ldraney/gcal-mcp) with Google OAuth 2.0 and Streamable HTTP transport — designed for Claude.ai connectors.
@@ -65,6 +69,10 @@ A systemd service file is provided in `systemd/gcal-mcp-remote.service`.
 Production deployment is managed by [mcp-gateway-k8s](https://github.com/ldraney/mcp-gateway-k8s), which runs this server as a pod with Tailscale Funnel ingress. That repo contains the Dockerfile, K8s manifests, and secrets management.
 
 Full integration testing (Claude.ai connector → OAuth → Google Calendar) is tracked in [mcp-gateway-k8s#12](https://github.com/ldraney/mcp-gateway-k8s/issues/12) and [#6](https://github.com/ldraney/gcal-mcp-remote/issues/6).
+
+## Privacy
+
+See [PRIVACY.md](PRIVACY.md) for our privacy policy.
 
 ## License
 
