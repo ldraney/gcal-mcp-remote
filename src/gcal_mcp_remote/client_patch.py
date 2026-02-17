@@ -59,7 +59,12 @@ def _make_client(credentials: Credentials) -> GCalClient:
 
         service = build("calendar", "v3", credentials=credentials)
 
-    # Construct GCalClient without calling __init__ (which would call build() again)
+    # SYNC NOTE: object.__new__(GCalClient) bypasses __init__ to avoid a
+    # redundant build() call.  The attribute assignments below must be kept
+    # in sync with GCalClient.__init__ in gcal-sdk.  If gcal-sdk adds new
+    # instance attributes in __init__, they must be replicated here.
+    # Long-term, consider adding a GCalClient.from_service() factory method
+    # to gcal-sdk so the library owns its own construction logic.
     client = object.__new__(GCalClient)
     client._credentials = credentials
     client._service = service
