@@ -46,8 +46,14 @@ class MethodAwareAuthMiddleware:
             await self.auth_middleware(scope, receive, send)
             return
 
-        # For GET/DELETE (SSE, session management), always require auth
+        # For GET requests (SSE listener), let the MCP SDK handle session validation
+        # (no OAuth auth needed — the SDK validates the session token internally)
         method = scope.get("method", "GET")
+        if method == "GET":
+            await self.app(scope, receive, send)
+            return
+
+        # For other non-POST methods (DELETE, etc.), require auth
         if method != "POST":
             await self.auth_middleware(scope, receive, send)
             return

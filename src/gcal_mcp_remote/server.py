@@ -83,7 +83,7 @@ mcp._token_verifier = ProviderTokenVerifier(provider)
 
 mcp.settings.host = HOST
 mcp.settings.port = PORT
-mcp.settings.stateless_http = True
+mcp.settings.stateless_http = False
 
 # Allow the public hostname (and any additional internal hostnames) through
 # transport security. ADDITIONAL_ALLOWED_HOSTS is comma-separated, used for
