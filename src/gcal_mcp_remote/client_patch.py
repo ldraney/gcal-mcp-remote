@@ -3,19 +3,70 @@
 Monkey-patches get_client() in gcal_mcp.server and all 3 tool modules
 so each authenticated request gets its own GCalClient with the user's
 Google OAuth credentials.
+
+The Google Calendar API discovery document is loaded once from the
+static copy bundled with the googleapiclient library. Per-request
+clients use build_from_document() instead of build(), avoiding the
+discovery cache machinery (and its "file_cache is only supported with
+oauth2client<4.0.0" warning) entirely.
 """
 
 from __future__ import annotations
 
+import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 
 from gcal_sdk import GCalClient
+from gcal_sdk.calendars import CalendarsResource
+from gcal_sdk.events import EventsResource
+from gcal_sdk.freebusy import FreeBusyResource
 from google.oauth2.credentials import Credentials
+from googleapiclient import discovery_cache
+from googleapiclient.discovery import build_from_document
+
+logger = logging.getLogger(__name__)
 
 _request_client: ContextVar[GCalClient | None] = ContextVar(
     "_request_client", default=None
 )
+
+# Load the static Calendar v3 discovery document once at import time.
+# This is the same JSON that build() would read from the bundled files,
+# but we skip the cache/autodetect path that emits the file_cache warning.
+_CALENDAR_DISCOVERY_DOC = discovery_cache.get_static_doc("calendar", "v3")
+if _CALENDAR_DISCOVERY_DOC is None:
+    # Fallback: if the static doc isn't bundled, build_from_document will
+    # fail, so we log a warning and fall back to build() at runtime.
+    logger.warning(
+        "Static discovery document for calendar v3 not found; "
+        "will fall back to build() per-request"
+    )
+
+
+def _make_client(credentials: Credentials) -> GCalClient:
+    """Create a GCalClient using the cached discovery document.
+
+    Uses build_from_document() with the pre-loaded static discovery JSON
+    instead of build(), which avoids the per-call discovery cache lookup
+    and the associated file_cache warning.
+    """
+    if _CALENDAR_DISCOVERY_DOC is not None:
+        service = build_from_document(_CALENDAR_DISCOVERY_DOC, credentials=credentials)
+    else:
+        # Fallback path — should not happen with standard google-api-python-client
+        from googleapiclient.discovery import build
+
+        service = build("calendar", "v3", credentials=credentials)
+
+    # Construct GCalClient without calling __init__ (which would call build() again)
+    client = object.__new__(GCalClient)
+    client._credentials = credentials
+    client._service = service
+    client.events = EventsResource(service)
+    client.calendars = CalendarsResource(service)
+    client.freebusy = FreeBusyResource(service)
+    return client
 
 
 def patched_get_client() -> GCalClient:
@@ -33,7 +84,10 @@ def set_client_for_request(
     client_id: str,
     client_secret: str,
 ) -> None:
-    """Create a GCalClient with the given Google refresh token and set it on the contextvar."""
+    """Create a GCalClient with the given Google refresh token and set it on the contextvar.
+
+    Uses the cached discovery document to avoid per-request build() calls.
+    """
     creds = Credentials(
         token=None,
         refresh_token=refresh_token,
@@ -41,7 +95,7 @@ def set_client_for_request(
         client_id=client_id,
         client_secret=client_secret,
     )
-    client = GCalClient(credentials=creds)
+    client = _make_client(creds)
     _request_client.set(client)
 
 
@@ -55,7 +109,7 @@ def client_context(refresh_token: str, client_id: str, client_secret: str):
         client_id=client_id,
         client_secret=client_secret,
     )
-    token = _request_client.set(GCalClient(credentials=creds))
+    token = _request_client.set(_make_client(creds))
     try:
         yield
     finally:

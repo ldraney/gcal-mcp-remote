@@ -103,6 +103,17 @@ if _allowed:
     mcp.settings.transport_security.allowed_hosts = _allowed
 
 # ---------------------------------------------------------------------------
+# 5b. Monkey-patch RequireAuthMiddleware -> MethodAwareAuthMiddleware
+#     so GET /mcp (SSE notifications) bypasses OAuth bearer auth.
+#     The MCP SDK validates session_id on GET internally.
+# ---------------------------------------------------------------------------
+
+import mcp.server.fastmcp.server as _fastmcp_module  # noqa: E402
+from gcal_mcp_remote.auth.discovery_auth import MethodAwareAuthMiddleware  # noqa: E402
+
+_fastmcp_module.RequireAuthMiddleware = MethodAwareAuthMiddleware
+
+# ---------------------------------------------------------------------------
 # 6. Custom routes (health check + Google OAuth callback)
 # ---------------------------------------------------------------------------
 
@@ -113,15 +124,6 @@ from starlette.responses import JSONResponse, RedirectResponse, Response  # noqa
 @mcp.custom_route("/health", methods=["GET"])
 async def health(request: Request) -> Response:
     return JSONResponse({"status": "ok"})
-
-
-@mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
-async def oauth_protected_resource(request: Request) -> Response:
-    """RFC 9728 — Protected Resource Metadata for MCP clients."""
-    return JSONResponse({
-        "resource": f"{BASE_URL}/mcp",
-        "authorization_servers": [f"{BASE_URL}/"],
-    })
 
 
 @mcp.custom_route("/oauth/callback", methods=["GET"])
@@ -164,46 +166,15 @@ async def google_oauth_callback(request: Request) -> Response:
 
 
 # ---------------------------------------------------------------------------
-# 7. Build the app with custom auth middleware for unauthenticated discovery
-# ---------------------------------------------------------------------------
-
-from gcal_mcp_remote.auth.discovery_auth import MethodAwareAuthMiddleware  # noqa: E402
-
-
-def _build_app():
-    """Build the Starlette app and patch /mcp auth to allow tool discovery."""
-    app = mcp.streamable_http_app()
-
-    # Find the /mcp route and replace its endpoint with our custom middleware
-    for route in app.routes:
-        if hasattr(route, "path") and route.path == "/mcp":
-            auth_middleware = route.app  # RequireAuthMiddleware
-            inner_app = auth_middleware.app  # StreamableHTTPASGIApp
-            route.app = MethodAwareAuthMiddleware(
-                app=inner_app,
-                auth_middleware=auth_middleware,
-            )
-            logger.info("Patched /mcp with MethodAwareAuthMiddleware")
-            break
-    else:
-        logger.warning("Could not find /mcp route to patch — auth bypass for discovery will not work")
-
-    return app
-
-
-# ---------------------------------------------------------------------------
-# 8. Run
+# 7. Run
 # ---------------------------------------------------------------------------
 
 
 def main():
-    import uvicorn  # noqa: E402
-
     logger.info("Starting gcal-mcp-remote on %s:%d", HOST, PORT)
     logger.info("Base URL: %s", BASE_URL)
     logger.info("MCP endpoint: %s/mcp", BASE_URL)
-    app = _build_app()
-    uvicorn.run(app, host=HOST, port=PORT)
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":
