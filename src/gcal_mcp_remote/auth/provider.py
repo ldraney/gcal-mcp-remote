@@ -39,7 +39,7 @@ GOOGLE_SCOPES = "https://www.googleapis.com/auth/calendar"
 
 # Token lifetimes
 AUTH_CODE_LIFETIME = 300  # 5 minutes
-ACCESS_TOKEN_LIFETIME = 86400  # 24 hours
+ACCESS_TOKEN_LIFETIME = 31536000  # 1 year
 
 
 class GoogleOAuthProvider:
